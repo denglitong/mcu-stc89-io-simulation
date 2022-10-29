@@ -3,15 +3,15 @@
 sbit PIN_RXD = P3^0;
 sbit PIN_TXD = P3^1;
 
+bit RxdOrTxd = 0;
 bit RxdEnd = 0;
 bit TxdEnd = 0; 
-bit RxdOrTxd = 0;
 unsigned char RxdBuf = 0;
 unsigned char TxdBuf = 0;
 
 void ConfigUART(unsigned int baud);
-void StartRXD();
 void StartTXD(unsigned char dat);
+void StartRXD();
 
 
 /**
@@ -60,7 +60,7 @@ void StartRXD() {
 	// 在读取每个周期的时候，防止读取到周期切换间隔的误差，
 	// 所以延时到单次周期的一半，才去读一次数据，
 	// 第一次开始读的时刻是 256 - 波特率时间的一半
-	TL0 = 256 - ((256-TH0) >> 1);
+	TL0 = 256 - ((256-TH0)>>1);
 	
 	ET0 = 1; // enable T0
 	TR0 = 1; // start T0
@@ -82,10 +82,8 @@ void InterruptTimer0() interrupt 1 {
 	// signal [1 8 1]
 	static unsigned char cnt = 0;
 	if (RxdOrTxd) { // 发送状态
-		if (cnt == 0) {
-			PIN_TXD = 0; // send start bit
-			cnt++;
-		} else if (cnt <= 8) { // set data bits
+		cnt++;
+		if (cnt <= 8) { // set data bits
 			PIN_TXD = TxdBuf & 0x01; // send last bit of TxdBuf
 			TxdBuf >>= 1;
 		} else if (cnt == 9) {
